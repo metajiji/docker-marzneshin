@@ -34,7 +34,7 @@ RUN mkdir -p /rootfs/app/data \
     && chown -R 65532:65532 /rootfs/app/data
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 --disable-pip-version-check install --prefix=/rootfs/usr --ignore-installed \
+    pip3 --disable-pip-version-check install --prefix=/rootfs/usr --ignore-installed --root-user-action=ignore \
         -r /rootfs/app/requirements.txt
 
 FROM scratch
@@ -68,15 +68,6 @@ ENV PATH=/usr/local/bin:/usr/bin:/bin
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONNOUSERSITE=1
 ENV PYTHONUNBUFFERED=1
-
-ENV XRAY_ASSETS_PATH=/app/data/xray
-ENV XRAY_CONFIG_PATH=/app/data/xray_config.json
-ENV XRAY_EXECUTABLE_PATH=/usr/local/bin/xray
-ENV HYSTERIA_EXECUTABLE_PATH=/usr/local/bin/hysteria
-ENV SING_BOX_EXECUTABLE_PATH=/usr/local/bin/sing-box
-ENV SSL_CLIENT_CERT_FILE=/app/data/client.pem
-ENV SSL_KEY_FILE=/app/data/server.key
-ENV SSL_CERT_FILE=/app/data/server.cert
 
 COPY --from=build /rootfs /
 

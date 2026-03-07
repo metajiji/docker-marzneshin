@@ -1,0 +1,32 @@
+---
+x-container: &container
+  restart: always
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges=true
+  pids_limit: 100
+  ulimits:
+    core: 0  # Prevent core dumps
+  network_mode: host  # TODO: use traefik
+  logging:
+    driver: json-file
+    options:
+      max-size: 200k
+      max-file: "10"
+
+name: marzneshin
+services:
+  panel:
+    <<: *container
+    build: containers/panel
+    # image: dawsh/marzneshin:latest
+    user: nonroot:nonroot
+    env_file:
+      - panel.env
+    volumes:
+      - panel_data:/app/data
+
+volumes:
+  panel_data:

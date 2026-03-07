@@ -22,6 +22,8 @@ services:
     <<: *container
     build: containers/node
     user: nonroot:nonroot
+    env_file:
+      - node.env
     # cap_add:
     #   - NET_BIND_SERVICE
     ulimits:
