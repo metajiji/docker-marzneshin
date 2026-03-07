@@ -25,6 +25,8 @@ services:
     user: nonroot:nonroot
     env_file:
       - panel.env
+    tmpfs:
+      - /tmp
     volumes:
       - panel_data:/app/data
 

@@ -20,10 +20,13 @@ RUN mkdir -p /rootfs/app/data \
     && curl -fsSL https://github.com/marzneshin/marznode/tarball/v${MARZNODE_VERSION:?err} | (\
         tar -xz --strip-components=1 --wildcards --anchored \
             --transform='s|/xray_config\.json$|/data/xray_config.json|' \
+            --transform='s|/hysteria\.yaml$|/data/hysteria.yaml|' \
             -C /rootfs/app \
             marzneshin-marznode-*/marznode \
             marzneshin-marznode-*/marznode.py \
             marzneshin-marznode-*/requirements.txt \
+            marzneshin-marznode-*/xray_config.json \
+            marzneshin-marznode-*/hysteria.yaml \
         ) \
     && ( \
         cd /rootfs/app/data \
@@ -31,7 +34,10 @@ RUN mkdir -p /rootfs/app/data \
         && curl -fsSLRO https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat \
     ) \
 # Set nonroot owner for data dir
-    && chown -R 65532:65532 /rootfs/app/data
+    && chown -R 65532:65532 /rootfs/app/data \
+# Copy shell required for marznode
+    && mkdir -p /rootfs/usr/bin \
+    && cp -a /usr/bin/sh /usr/bin/dash /rootfs/usr/bin/
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 --disable-pip-version-check install --prefix=/rootfs/usr --ignore-installed --root-user-action=ignore \
