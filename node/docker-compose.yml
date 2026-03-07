@@ -1,0 +1,44 @@
+---
+x-container: &container
+  restart: always
+  read_only: true
+  cap_drop:
+    - ALL
+  security_opt:
+    - no-new-privileges=true
+  pids_limit: 100
+  ulimits:
+    core: 0  # Prevent core dumps
+  network_mode: host
+  logging:
+    driver: json-file
+    options:
+      max-size: 200k
+      max-file: "10"
+
+name: marzneshin
+services:
+  node:
+    <<: *container
+    build: containers/node
+    user: nonroot:nonroot
+    # cap_add:
+    #   - NET_BIND_SERVICE
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    # tmpfs:
+    #   - /tmp
+    #   - /run
+    volumes:
+      - node_data:/app/data
+      - type: bind
+        source: ./client.pem
+        target: /app/data/client.pem
+        read_only: true
+        bind:
+          create_host_path: false
+
+volumes:
+  node_data:
