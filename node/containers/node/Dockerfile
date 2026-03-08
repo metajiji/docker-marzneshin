@@ -71,6 +71,7 @@ COPY --from=ghcr.io/xtls/xray-core:26.2.6 /usr/local/bin/xray /usr/local/bin/
 WORKDIR /app
 
 ENV PATH=/usr/local/bin:/usr/bin:/bin
+ENV PYTHONPYCACHEPREFIX=/app/data/.pycache
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONNOUSERSITE=1
 ENV PYTHONUNBUFFERED=1
