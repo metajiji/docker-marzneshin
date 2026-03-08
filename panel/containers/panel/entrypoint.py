@@ -12,12 +12,11 @@ def run_migrations():
     # Using list for security (no shell injection)
     # Using sys.executable to ensure we use the same python interpreter
     try:
-        result = subprocess.run(
+        subprocess.run(
             [sys.executable, "-m", "alembic", "upgrade", "head"],
             check=True
         )
         print("[Entrypoint] Migrations completed successfully.", flush=True)
-        sys.exit(result.returncode)
     except subprocess.CalledProcessError as e:
         print(f"[Entrypoint] Migrations failed with exit code {e.returncode}", flush=True)
         sys.exit(e.returncode)
