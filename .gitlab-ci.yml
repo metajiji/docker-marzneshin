@@ -95,6 +95,8 @@ build images:
           - node
   variables:
     DOCKER_CONTEXT: $COMPONENT/containers/$COMPONENT
+    DOCKER_EXTRA: >-
+      --label=org.opencontainers.image.source=https://github.com/metajiji/docker-marzneshin
   before_script:
     - |-
       if [ -n "$CI_COMMIT_TAG" ]; then
