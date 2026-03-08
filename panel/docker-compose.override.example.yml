@@ -1,0 +1,18 @@
+---
+services:
+  panel:
+    # build: containers/panel
+    # network_mode: host  # Or use directrly with own certificates or get from acme via lego/certbot
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:?err}-panel.tls=true
+      # - traefik.http.routers.${COMPOSE_PROJECT_NAME:?err}-panel.tls.certresolver=letsencrypt
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:?err}-panel.rule=Host(`${VIRTUAL_HOST:?err}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:?err}-panel.entrypoints=https
+      - traefik.http.services.${COMPOSE_PROJECT_NAME:?err}-panel.loadbalancer.server.port=8080  # See panel.env:UVICORN_PORT
+      - traefik.http.services.${COMPOSE_PROJECT_NAME:?err}-panel.loadbalancer.server.scheme=http  # Or https if used UVICORN tls
+      - traefik.http.services.${COMPOSE_PROJECT_NAME:?err}-panel.loadbalancer.passiveHealthcheck.maxFailedAttempts=2
+      - traefik.http.services.${COMPOSE_PROJECT_NAME:?err}-panel.loadbalancer.passiveHealthcheck.failureWindow=3s
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:?err}-panel-http.rule=Host(`${VIRTUAL_HOST:?err}`)
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:?err}-panel-http.entrypoints=http
+      - traefik.http.routers.${COMPOSE_PROJECT_NAME:?err}-panel-http.middlewares=default-https-redirect@file

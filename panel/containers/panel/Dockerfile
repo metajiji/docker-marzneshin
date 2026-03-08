@@ -5,12 +5,14 @@ ARG MARZNESHIN_VERSION=0.7.4
 FROM gcr.io/distroless/python3-debian$DEBIAN_VERSION:nonroot AS distroless
 
 FROM debian:$DEBIAN_VERSION-slim AS prepare
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update \
     && apt-get install -y --no-install-suggests --no-install-recommends -o Binary::apt::APT::Keep-Downloaded-Packages=true \
         ca-certificates \
         curl \
+        gcc \
         python3-pip \
         python3-dev
 

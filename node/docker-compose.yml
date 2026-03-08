@@ -20,7 +20,7 @@ name: marzneshin
 services:
   node:
     <<: *container
-    build: containers/node
+    image: ghcr.io/metajiji/docker-marzneshin/node:latest
     user: nonroot:nonroot
     env_file:
       - node.env
