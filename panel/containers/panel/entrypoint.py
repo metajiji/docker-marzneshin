@@ -17,12 +17,14 @@ def run_migrations():
             check=True
         )
         print("[Entrypoint] Migrations completed successfully.", flush=True)
+        sys.exit(result.returncode)
     except subprocess.CalledProcessError as e:
         print(f"[Entrypoint] Migrations failed with exit code {e.returncode}", flush=True)
         sys.exit(e.returncode)
     except Exception as e:
         print(f"[Entrypoint] An unexpected error occurred: {e}", flush=True)
         sys.exit(1)
+
 
 def start_app():
     """Replace current process with the main application."""
@@ -33,7 +35,7 @@ def start_app():
     # This makes main.py PID 1.
     os.execlp(sys.executable, sys.executable, 'main.py')
 
+
 if __name__ == '__main__':
     run_migrations()
     start_app()
-

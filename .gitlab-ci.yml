@@ -1,0 +1,115 @@
+---
+include:
+  - project: docker/include
+    ref: master
+    file:
+      - .buildkit_docker_image.yml
+      - .buildkit_docker_service.yml
+
+workflow:
+  rules:
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH && $CI_OPEN_MERGE_REQUESTS
+      when: never
+    - if: $CI_COMMIT_BRANCH
+    - if: $CI_COMMIT_TAG
+
+stages:
+  - lint
+  - build
+
+trivy:
+  stage: lint
+  image:
+    name: aquasec/trivy:0.69.3
+    entrypoint: [""]
+  script:
+    - trivy config .
+  rules:
+    - changes:
+        - "**/Dockerfile"
+
+hadolint:
+  stage: lint
+  image:
+    name: ghcr.io/hadolint/hadolint:v2.14.0-debian
+    entrypoint: [""]
+  script:
+    - hadolint */containers/*/Dockerfile
+  rules:
+    - changes:
+        - .hadolint.yaml
+        - "**/Dockerfile"
+
+checkov:
+  stage: lint
+  image:
+    name: ghcr.io/bridgecrewio/checkov:3
+    entrypoint: [""]
+  script:
+    - checkov -d .
+  rules:
+    - changes:
+        - .checkov.yaml
+        - "**/Dockerfile"
+
+tox:
+  stage: lint
+  image:
+    name: python:3.13-slim
+    entrypoint: [""]
+  variables:
+    PIP_CACHE_DIR: $CI_PROJECT_DIR/.cache/pip
+  script:
+    - pip install tox
+    - tox
+  cache:
+    paths:
+      - .cache/pip/
+      - .tox/
+  rules:
+    - changes:
+        - tox.ini
+        - "**/*.yaml"
+        - "**/*.yml"
+        - "**/*.py"
+        - .yamllint
+
+build images:
+  extends:
+    - .buildkit_docker_service
+    - .build_docker_image
+  resource_group: docker_build_limit
+  parallel:
+    matrix:
+      - COMPONENT:
+          - panel
+          - node
+  variables:
+    DOCKER_CONTEXT: $COMPONENT/containers/$COMPONENT
+  before_script:
+    - |-
+      if [ -n "$CI_COMMIT_TAG" ]; then
+        echo "Logging into GHCR for tag release..."
+        echo "$GHCR_IO_REGISTRY_TOKEN" | docker login -u "$GHCR_IO_REGISTRY_LOGIN" --password-stdin ghcr.io
+      fi
+  rules:
+    - if: $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH
+      variables:
+        DOCKER_IMAGES: >-
+          $CI_REGISTRY_IMAGE/$COMPONENT:$CI_COMMIT_REF_SLUG
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event" || $CI_COMMIT_BRANCH
+      variables:
+        DOCKER_PUSH: "true"
+        DOCKER_IMAGES: >-
+          $CI_REGISTRY_IMAGE/$COMPONENT:$CI_COMMIT_REF_SLUG
+    - if: $CI_COMMIT_TAG
+      variables:
+        DOCKER_NOBUILD: "1"
+        DOCKER_IMAGES: >-
+          $CI_REGISTRY_IMAGE/$COMPONENT:$CI_COMMIT_TAG
+          $CI_REGISTRY_IMAGE/$COMPONENT:latest
+          ghcr.io/metajiji/docker-marzneshin/$COMPONENT:$CI_COMMIT_TAG
+          ghcr.io/metajiji/docker-marzneshin/$COMPONENT:latest
+        DOCKER_CACHE_FROM: >-
+          $CI_REGISTRY_IMAGE/$COMPONENT:$CI_DEFAULT_BRANCH

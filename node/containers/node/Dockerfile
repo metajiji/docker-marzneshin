@@ -4,6 +4,7 @@ ARG DEBIAN_VERSION=13
 FROM gcr.io/distroless/python3-debian$DEBIAN_VERSION:nonroot AS distroless
 
 FROM debian:$DEBIAN_VERSION-slim AS build
+SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update \
@@ -28,11 +29,10 @@ RUN mkdir -p /rootfs/app/data \
             marzneshin-marznode-*/xray_config.json \
             marzneshin-marznode-*/hysteria.yaml \
         ) \
-    && ( \
-        cd /rootfs/app/data \
-        && curl -fsSLRO https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat \
-        && curl -fsSLRO https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat \
-    ) \
+    && curl -fsSLRo /rootfs/app/data/geoip.dat \
+        https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat \
+    && curl -fsSLRo /rootfs/app/data/geosite.dat \
+        https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat \
 # Set nonroot owner for data dir
     && chown -R 65532:65532 /rootfs/app/data \
 # Copy shell required for marznode
