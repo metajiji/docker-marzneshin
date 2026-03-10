@@ -21,7 +21,7 @@ services:
   node:
     <<: *container
     image: ghcr.io/metajiji/docker-marzneshin/node:latest
-    user: nonroot:nonroot
+    user: nobody:nogroup
     env_file:
       - node.env
     cap_add:

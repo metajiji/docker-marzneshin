@@ -2,6 +2,7 @@
 services:
   panel:
     # build: containers/panel
+    # image: $COMPOSE_PROJECT_NAME-panel:latest
     # network_mode: host  # Or use directrly with own certificates or get from acme via lego/certbot
     labels:
       - traefik.enable=true

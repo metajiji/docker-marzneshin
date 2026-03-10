@@ -17,19 +17,21 @@ x-container: &container
 
 name: marzneshin
 services:
-  panel:
+  migrator:
     <<: *container
-    image: ghcr.io/metajiji/docker-marzneshin/panel:latest
-    user: nobody:nogroup
+    image: ghcr.io/metajiji/docker-marzneshin/migrator:latest
+    user: nonroot:nonroot
     env_file:
-      - panel.env
+      - migrator.env
     tmpfs:
       - /tmp
     volumes:
-      - panel_data:/app/data
+      - migrator_data:/app/data
+      - migrator_log:/app/log
 
 volumes:
-  panel_data:
+  migrator_data:
+  migrator_log:
 
 networks:
   default:

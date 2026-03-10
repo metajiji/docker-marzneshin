@@ -1,20 +1,15 @@
-# syntax=docker/dockerfile:1.7-labs
-ARG DEBIAN_VERSION=13
 ARG MARZNESHIN_VERSION=0.7.4
+FROM python:3.12-slim AS base
+WORKDIR /app
 
-FROM gcr.io/distroless/python3-debian$DEBIAN_VERSION:nonroot AS distroless
-
-FROM debian:$DEBIAN_VERSION-slim AS prepare
+FROM base AS prepare
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update \
     && apt-get install -y --no-install-suggests --no-install-recommends -o Binary::apt::APT::Keep-Downloaded-Packages=true \
-        ca-certificates \
-        curl \
-        gcc \
-        python3-pip \
-        python3-dev
+        curl
 
 ARG MARZNESHIN_VERSION
 RUN mkdir -p /rootfs/app/data \
@@ -29,17 +24,15 @@ RUN mkdir -p /rootfs/app/data \
             marzneshin-marzneshin-*/marzneshin-cli.py \
             marzneshin-marzneshin-*/requirements.txt \
         ) \
-# TODO: Upgrade psycopg for compat with debian13
     && sed -i \
-        -e 's|^psycopg\(.*\)==.*|psycopg\1==3.3.3|g' \
 # TIP: Keep same version at original, but not specified in requirements.txt
         -e '1i click==8.2.1' \
         /rootfs/app/requirements.txt \
-# Set nonroot owner for data dir
-    && chown -R 65532:65532 /rootfs/app/data
+# Set nobody owner for data dir
+    && chown -R 65534:65534 /rootfs/app/data
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 --disable-pip-version-check install --prefix=/rootfs/usr --ignore-installed --root-user-action=ignore \
+    pip3 --disable-pip-version-check install --prefix=/rootfs/usr/local --ignore-installed --root-user-action=ignore \
         -r /rootfs/app/requirements.txt
 
 COPY entrypoint.py /rootfs/
@@ -62,23 +55,7 @@ RUN --mount=type=cache,target=/root/.cache \
     && npm run build --if-present -- --outDir 'dist' --assetsDir 'static' \
     && rm -rf node_modules
 
-FROM scratch
-
-COPY --from=distroless --parents \
-    /bin \
-    /etc \
-    /home/nonroot \
-    /lib \
-    /lib64 \
-    /usr/bin \
-    /usr/lib \
-    /usr/lib64 \
-    /usr/share/zoneinfo \
-    /var/run \
-    /var/tmp \
-    /
-
-WORKDIR /app
+FROM base
 
 ENV PATH=/usr/local/bin:/usr/bin:/bin
 ENV PYTHONPYCACHEPREFIX=/app/data/.pycache
@@ -88,7 +65,7 @@ ENV PYTHONUNBUFFERED=1
 
 COPY --from=build /rootfs /
 
-USER nonroot
+USER nobody:nogroup
 
 # Use JSON syntax for ENTRYPOINT to avoid starting a shell
 ENTRYPOINT ["python3"]
