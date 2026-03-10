@@ -1,20 +1,15 @@
-# syntax=docker/dockerfile:1.7-labs
-ARG DEBIAN_VERSION=13
+FROM python:3.12-slim AS base
+WORKDIR /app
 
-FROM gcr.io/distroless/python3-debian$DEBIAN_VERSION:nonroot AS distroless
-
-FROM debian:$DEBIAN_VERSION-slim AS build
+FROM base AS build
 SHELL ["/bin/bash", "-eo", "pipefail", "-c"]
+
 RUN --mount=type=cache,target=/var/cache/apt,sharing=locked \
     --mount=type=cache,target=/var/lib/apt,sharing=locked \
     apt-get update \
     && apt-get install -y --no-install-suggests --no-install-recommends -o Binary::apt::APT::Keep-Downloaded-Packages=true \
-        ca-certificates \
         curl \
-        gcc \
-        libc-dev \
-        python3-pip \
-        python3-dev
+        libc-dev
 
 ARG MARZNODE_VERSION=0.5.7
 RUN mkdir -p /rootfs/app/data \
@@ -33,31 +28,17 @@ RUN mkdir -p /rootfs/app/data \
         https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geoip.dat \
     && curl -fsSLRo /rootfs/app/data/geosite.dat \
         https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat \
-# Set nonroot owner for data dir
+# Set nobody owner for data dir
     && chown -R 65532:65532 /rootfs/app/data \
-# Copy shell required for marznode
-    && mkdir -p /rootfs/usr/bin \
-    && cp -a /usr/bin/sh /usr/bin/dash /rootfs/usr/bin/
+    && sed -i \
+        -e 's@match = re.match(r"Private key: (.+)\\nPublic key: (.+)", output)@match = re.match(r"Private\\s?[Kk]ey: (.+)\\n(?:Public key|Password): (.+)", output)@' \
+        /rootfs/app/marznode/backends/xray/_utils.py
 
 RUN --mount=type=cache,target=/root/.cache/pip \
-    pip3 --disable-pip-version-check install --prefix=/rootfs/usr --ignore-installed --root-user-action=ignore \
+    pip3 --disable-pip-version-check install --prefix=/rootfs/usr/local --ignore-installed --root-user-action=ignore \
         -r /rootfs/app/requirements.txt
 
-FROM scratch
-
-COPY --from=distroless --parents \
-    /bin \
-    /etc \
-    /home/nonroot \
-    /lib \
-    /lib64 \
-    /usr/bin \
-    /usr/lib \
-    /usr/lib64 \
-    /usr/share/zoneinfo \
-    /var/run \
-    /var/tmp \
-    /
+FROM base
 
 # https://hub.docker.com/r/tobyxdd/hysteria
 COPY --from=tobyxdd/hysteria:v2.7.1 /usr/local/bin/hysteria /usr/local/bin/
@@ -68,7 +49,6 @@ COPY --from=ghcr.io/sagernet/sing-box:v1.13.2 /usr/local/bin/sing-box /usr/local
 # https://github.com/xtls/Xray-core/pkgs/container/xray-core
 COPY --from=ghcr.io/xtls/xray-core:26.2.6 /usr/local/bin/xray /usr/local/bin/
 
-WORKDIR /app
 
 ENV PATH=/usr/local/bin:/usr/bin:/bin
 ENV PYTHONPYCACHEPREFIX=/app/data/.pycache
@@ -78,7 +58,8 @@ ENV PYTHONUNBUFFERED=1
 
 COPY --from=build /rootfs /
 
-USER nonroot
+USER nobody:nogroup
 
-ENTRYPOINT ["python"]
+# Use JSON syntax for ENTRYPOINT to avoid starting a shell
+ENTRYPOINT ["python3"]
 CMD ["marznode.py"]

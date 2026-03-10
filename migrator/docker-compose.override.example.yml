@@ -1,0 +1,5 @@
+---
+services:
+  migrator:
+    build: containers/migrator
+    image: $COMPOSE_PROJECT_NAME-migrator:latest

@@ -2,3 +2,4 @@
 services:
   node:
     build: containers/node
+    image: $COMPOSE_PROJECT_NAME-node:latest

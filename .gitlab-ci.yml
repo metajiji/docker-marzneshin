@@ -93,6 +93,7 @@ build images:
       - COMPONENT:
           - panel
           - node
+          - migrator
   variables:
     DOCKER_CONTEXT: $COMPONENT/containers/$COMPONENT
     DOCKER_EXTRA: >-
