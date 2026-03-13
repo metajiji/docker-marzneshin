@@ -24,7 +24,7 @@ trivy:
     name: aquasec/trivy:0.69.3
     entrypoint: [""]
   script:
-    - trivy config .
+    - trivy --exit-code=42 config .
   rules:
     - if: $CI_COMMIT_TAG
       when: never
