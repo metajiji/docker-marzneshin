@@ -29,7 +29,7 @@ RUN mkdir -p /rootfs/app/data \
     && curl -fsSLRo /rootfs/app/data/geosite.dat \
         https://github.com/Loyalsoldier/v2ray-rules-dat/releases/latest/download/geosite.dat \
 # Set nobody owner for data dir
-    && chown -R 65532:65532 /rootfs/app/data \
+    && chown -R nobody:nogroup /rootfs/app/data \
     && sed -i \
         -e 's@match = re.match(r"Private key: (.+)\\nPublic key: (.+)", output)@match = re.match(r"Private\\s?[Kk]ey: (.+)\\n(?:Public key|Password): (.+)", output)@' \
         /rootfs/app/marznode/backends/xray/_utils.py

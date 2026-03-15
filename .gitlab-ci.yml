@@ -23,6 +23,8 @@ trivy:
   image:
     name: aquasec/trivy:0.69.3
     entrypoint: [""]
+  variables:
+    TRIVY_DISABLE_TELEMETRY: true
   script:
     - trivy --exit-code=42 config .
   rules:
