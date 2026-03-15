@@ -29,7 +29,7 @@ services:
         bind:
           create_host_path: false
       - type: bind
-        source: /var/lib/docker/volumes/marzneshin_panel_data/_data
+        source: /var/lib/docker/volumes/${COMPOSE_PROJECT_NAME}_panel_data/_data
         target: /var/lib/marzneshin
         read_only: false  # Yes required write access
         bind:

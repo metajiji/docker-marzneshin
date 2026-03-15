@@ -1,5 +1,18 @@
 ---
 services:
   migrator:
-    build: containers/migrator
-    image: $COMPOSE_PROJECT_NAME-migrator:latest
+    # build: containers/migrator
+    # image: $COMPOSE_PROJECT_NAME-migrator:latest
+    volumes:
+      - type: bind
+        source: ./db.sqlite3
+        target: /var/lib/marzban/db.sqlite3
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/lib/docker/volumes/${COMPOSE_PROJECT_NAME}_panel_data/_data
+        target: /var/lib/marzneshin
+        read_only: false
+        bind:
+          create_host_path: false
