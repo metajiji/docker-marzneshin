@@ -1,5 +1,13 @@
 # Marzneshin Node
 
+1. Run panel
+2. Create admin user
+3. Run node (add node to panel, copy `client.pem` from panel)
+4. Copy xray config (go to panel edit node and copy old Xray config from marzban to node settings)
+5. Export
+6. Import
+7. Copy usage data
+
 ## Export
 
 ```bash
