@@ -25,8 +25,8 @@ RUN mkdir -p /rootfs/app/data \
             marzneshin-marzneshin-*/requirements.txt \
         ) \
     && sed -i \
-# TIP: Keep same version at original, but not specified in requirements.txt
-        -e '1i click==8.2.1' \
+        -e 's/^typer==.*/typer==0.24.1/' \
+        -e 's/^rich==.*/rich==14.3.3/' \
         /rootfs/app/requirements.txt \
 # Set nobody owner for data dir
     && chown -R 65534:65534 /rootfs/app/data

@@ -62,3 +62,17 @@ docker compose run --rm --user 65534:65534 -ti migrator node_usages.py
 ```
 
 Go to web panel and delete [injected user](https://github.com/erfjab/migration/blob/e0af91056f0cf644eefb0c6a5719766496f9a325/app/importer/utils/helpers.py#L100-L92) `bear`.
+
+## Run subscription service
+
+Apply migrations
+
+```bash
+docker compose run --rm -ti --entrypoint python migrator -m alembic upgrade head
+```
+
+Up the project
+
+```bash
+docker compose up -d
+```

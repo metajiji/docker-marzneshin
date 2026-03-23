@@ -34,8 +34,22 @@ RUN mkdir -p /rootfs/app/data /rootfs/app/log \
     && sed -i \
 # TIP: Move state data to external volume
         -e 's|"{bot_name}\.log"|"log/{bot_name}.log"|' \
-        /rootfs/app/app/handler/utils/log.py \
         /rootfs/app/app/importer/utils/system_config.py \
+# TIP: Disable unwanted logging to file
+    && sed -i \
+        -e '/file_handler/d' \
+        /rootfs/app/app/handler/utils/log.py \
+# TIP: Move state data to external volume
+    && sed -i \
+        -e '1i import os' \
+        -e "s|\"sqlite+aiosqlite:///db\.sqlite3\"|os.environ.get('MIGRATOR_DB_URL', 'sqlite+aiosqlite:///data/db.sqlite3')|" \
+        /rootfs/app/app/handler/db/base.py \
+        /rootfs/app/app/handler/db/migrations/env.py \
+    && sed -i \
+# TIP: Add url prefix for subscription_url
+        -e '1i import os' \
+        -e "s|\({dbuser\.subscription_url}\)|{os.environ['SUBSCRIPTION_URL_PREFIX'].rstrip('/')}/\1|" \
+        /rootfs/app/app/handler/routers/sub.py \
     && sed -i \
 # TIP: Move state data to external volume
         -e 's|marzban\.json|data/marzban.json|' \
@@ -84,4 +98,4 @@ COPY --from=build /rootfs /
 USER nonroot
 
 ENTRYPOINT ["python"]
-CMD ["main.py"]
+CMD ["/app/main.py"]
