@@ -27,9 +27,10 @@ RUN mkdir -p /rootfs/app/data \
     && sed -i \
         -e 's/^typer==.*/typer==0.24.1/' \
         -e 's/^rich==.*/rich==14.3.3/' \
+        -e 's/^bcrypt==.*/bcrypt==3.2.2/' \
         /rootfs/app/requirements.txt \
 # Set nobody owner for data dir
-    && chown -R 65534:65534 /rootfs/app/data
+    && chown -R nobody:nogroup /rootfs/app/data
 
 RUN --mount=type=cache,target=/root/.cache/pip \
     pip3 --disable-pip-version-check install --prefix=/rootfs/usr/local --ignore-installed --root-user-action=ignore \
