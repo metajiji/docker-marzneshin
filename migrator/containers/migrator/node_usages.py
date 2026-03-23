@@ -1,68 +1,147 @@
 import os
 import logging
-from sqlalchemy import create_engine, MetaData, Table, insert, select, exc
-
-# Configuration
-SOURCE_DB = f'sqlite:///{os.environ["SQLITE_PATH"]}'
-DEST_DB = f'sqlite:///{os.environ["MARZNESHIN_SQLITE_PATH"]}'
-CHUNK_SIZE = 1000  # Optimal batch size for SQLite performance/memory balance
+import sqlalchemy
 
 
-def migrate_data(tables_to_copy: list[str]) -> None:
-    src_engine = create_engine(SOURCE_DB)
-    dest_engine = create_engine(DEST_DB)
-    metadata = MetaData()
+class MarzbanMigrator:
+    def __init__(self, src_url: str, dest_url: str, chunk_size: int = 1000):
+        self.src_engine = sqlalchemy.create_engine(src_url)
+        self.dest_engine = sqlalchemy.create_engine(dest_url)
+        self.chunk_size = chunk_size
 
-    # Open both connections in a single block
-    try:
-        with src_engine.connect() as src_conn, dest_engine.connect() as dest_conn:
-            logging.info('Established connections to both databases.')
+        self.src_metadata = sqlalchemy.MetaData()
+        self.dest_metadata = sqlalchemy.MetaData()
 
-            for table_name in tables_to_copy:
-                logging.info(f'Starting migration for table: {table_name}')
+        self.src_conn = None
+        self.dest_conn = None
 
-                # Reflect table schema from source
-                table = Table(table_name, metadata, autoload_with=src_engine)
+    def __enter__(self):
+        """Initializes connections when entering 'with' block."""
+        self.src_conn = self.src_engine.connect()
+        self.dest_conn = self.dest_engine.connect()
+        logging.info('Connected to source and destination databases.')
+        return self
 
-                # Execute select on source
-                result_proxy = src_conn.execute(select(table))
+    def __exit__(self, exc_type, exc_val, exc_tb):
+        """Closes connections when exiting 'with' block."""
+        if self.src_conn:
+            self.src_conn.close()
+        if self.dest_conn:
+            self.dest_conn.close()
+        logging.info('Database connections closed.')
 
-                total_rows = 0
-                while True:
-                    rows = result_proxy.fetchmany(CHUNK_SIZE)
-                    if not rows:
-                        break
+    def migrate_usage_logs(self, tables: list[str]):
+        """Copies log tables row-by-row in chunks."""
+        for table_name in tables:
+            logging.info(f'Migrating table: {table_name}')
 
-                    # Convert rows to dicts for the insert statement
-                    data = [row._asdict() for row in rows]
+            # Reflect schema
+            table = sqlalchemy.Table(table_name, self.src_metadata, autoload_with=self.src_engine)
+            result = self.src_conn.execute(sqlalchemy.select(table))
 
-                    try:
-                        # Use a sub-transaction for each chunk
-                        with dest_conn.begin():
-                            dest_conn.execute(insert(table), data)
+            while True:
+                rows = result.fetchmany(self.chunk_size)
+                if not rows:
+                    break
 
-                        total_rows += len(data)
-                        logging.info(f'Migrated {total_rows} rows so far for {table_name}...')
+                data = [row._asdict() for row in rows]
+                try:
+                    with self.dest_conn.begin():
+                        self.dest_conn.execute(sqlalchemy.insert(table), data)
+                except sqlalchemy.exc.IntegrityError:
+                    logging.warning(f'Duplicates found in {table_name}, skipping batch.')
+                    continue
 
-                    except exc.IntegrityError as e:
-                        logging.warning(f'Integrity error in {table_name} (possibly duplicates): {e}')
-                        # Depending on requirements, you could skip or handle specific rows here
-                        continue
+    def sync_user_traffic(self):
+        """Syncs total used_traffic from Marzban to Marzneshin users."""
+        logging.info("Syncing user traffic totals...")
 
-                logging.info(f'Finished migration for {table_name}. Total: {total_rows} rows.')
+        src_users = sqlalchemy.Table('users', self.src_metadata, autoload_with=self.src_engine)
+        dest_users = sqlalchemy.Table('users', self.dest_metadata, autoload_with=self.dest_engine)
 
-    except Exception as e:
-        logging.error(f'Critical migration error: {e}')
-        raise
+        result = self.src_conn.execute(sqlalchemy.select(src_users.c.username, src_users.c.used_traffic))
+
+        while True:
+            rows = result.fetchmany(self.chunk_size)
+            if not rows:
+                break
+
+            # Bulk update mapping
+            payload = [
+                {
+                    'u_name': self._normalize_username(r.username),
+                    'val': r.used_traffic
+                }
+                for r in rows if r.username
+            ]
+
+            with self.dest_conn.begin():
+                stmt = (
+                    sqlalchemy.update(dest_users)
+                    .where(dest_users.c.username == sqlalchemy.bindparam('u_name'))
+                    .values(used_traffic=sqlalchemy.bindparam('val'))
+                )
+                self.dest_conn.execute(stmt, payload)
+
+            logging.info(f'Updated traffic for {len(payload)} users.')
+
+    def sync_user_created_at(self):
+        """Syncs created_at from Marzban to Marzneshin users."""
+        logging.info("Syncing user created_at...")
+
+        src_users = sqlalchemy.Table('users', self.src_metadata, autoload_with=self.src_engine)
+        dest_users = sqlalchemy.Table('users', self.dest_metadata, autoload_with=self.dest_engine)
+
+        result = self.src_conn.execute(sqlalchemy.select(src_users.c.username, src_users.c.created_at))
+
+        while True:
+            rows = result.fetchmany(self.chunk_size)
+            if not rows:
+                break
+
+            # Bulk update mapping
+            payload = [
+                {
+                    'u_name': self._normalize_username(r.username),
+                    'val': r.created_at,
+                } for r in rows if r.username
+            ]
+
+            with self.dest_conn.begin():
+                stmt = (
+                    sqlalchemy.update(dest_users)
+                    .where(dest_users.c.username == sqlalchemy.bindparam('u_name'))
+                    .values(created_at=sqlalchemy.bindparam('val'))
+                )
+                self.dest_conn.execute(stmt, payload)
+
+            logging.info(f'Updated created_at for {len(payload)} users.')
+
+    def _normalize_username(self, username: str) -> str:
+        """Converts 'User-Name' to 'user_name' to match destination format."""
+        if not username:
+            return ''
+        return username.lower().replace('-', '_')
 
 
 if __name__ == '__main__':
     # Setup logging
     logging.getLogger().setLevel(logging.INFO)
 
-    tables_to_copy = (
-        'node_usages',
-        'node_user_usages',
-    )
+    # Paths from environment
+    src_db = f'sqlite:///{os.environ.get("SQLITE_PATH")}'
+    dest_db = f'sqlite:///{os.environ.get("MARZNESHIN_SQLITE_PATH")}'
 
-    migrate_data(tables_to_copy)
+    try:
+        with MarzbanMigrator(src_db, dest_db) as migrator:
+            tables_to_copy = (
+                'node_usages',
+                'node_user_usages',
+            )
+            # migrator.migrate_usage_logs(tables_to_copy)
+            migrator.sync_user_traffic()
+            migrator.sync_user_created_at()
+        logging.info('Migration finished successfully!')
+    except Exception as e:
+        logging.error(f'Migration failed: {e}')
+        exit(1)
