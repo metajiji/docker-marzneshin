@@ -1,0 +1,10 @@
+server {
+    listen unix:/run/sockets/nginx-main.sock ssl proxy_protocol;  # H2C server with PROXY protocol reception
+
+    server_name $SERVER_NAME_VLESS_GRPC;
+
+    ssl_certificate /etc/nginx/ssl/$SERVER_NAME_VLESS_GRPC.crt;
+    ssl_certificate_key /etc/nginx/ssl/$SERVER_NAME_VLESS_GRPC.key;
+
+    include /nextcloud/nextcloud.conf;
+}

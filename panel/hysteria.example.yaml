@@ -1,0 +1,22 @@
+listen: :1935
+acme:
+  listenHost: 127.0.0.1
+  type: tls
+  tls:
+    altPort: 2443
+  domains:
+    - h2.domain.tld
+  email: admin@domain.tld
+obfs:
+  type: salamander
+  salamander:
+    password: random-string
+ignoreClientBandwidth: true
+bandwidth:
+  up: 1 gbps
+  down: 1 gbps
+masquerade:
+  type: proxy
+  proxy:
+    url: https://domain.tld
+    rewriteHost: true

@@ -1,0 +1,380 @@
+{
+    "log": {
+        "loglevel": "info"
+    },
+    "inbounds": [
+        {
+            "tag": "VMess TCP",
+            "listen": "0.0.0.0",
+            "port": 8444,
+            "protocol": "vmess",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "raw",
+                "rawSettings": {
+                    "acceptProxyProtocol": false
+                },
+                "security": "none"
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "VMess Websocket",
+            "listen": "/run/sockets/xray-vmess-ws.sock,0666",
+            "protocol": "vmess",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                    "acceptProxyProtocol": false,
+                    "path": "/vmsws"
+                },
+                "security": "none"
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "VMess GRPC REALITY",
+            "listen": "/run/sockets/xray-vmess-grpc.sock,0666",
+            "protocol": "vmess",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "grpc",
+                "grpcSettings": {
+                    "serviceName": "xyz"
+                },
+                "sockopt": {
+                    "acceptProxyProtocol": true
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "target": "/run/sockets/nginx-main.sock",
+                    "xver": 2,
+                    "spiderX": "/",
+                    "serverNames": [
+                        "vmg.domain.tld"
+                    ],
+                    "privateKey": "docker compose exec -ti node xray x25519",
+                    "shortIds": [
+                        "Generate shortIds",
+                        "for i in {1..4}; do openssl rand -hex 8; done | jq -R . | jq -s ."
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "VLESS xHTTP REALITY",
+            "listen": "/run/sockets/xray-vless-xhttp.sock,0666",
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "xhttp",
+                "xhttpSettings": {
+                    "path": "/generate by uuidgen",
+                    "mode": "auto",
+                    "host": "vlht.domain.tld",
+                    "scMaxEachPostBytes": 1000000,
+                    "xPaddingBytes": "100-1000"
+                },
+                "sockopt": {
+                    "acceptProxyProtocol": true
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "target": "/run/sockets/nginx-main.sock",
+                    "xver": 2,
+                    "spiderX": "/",
+                    "serverNames": [
+                        "vlht.domain.tld"
+                    ],
+                    "privateKey": "docker compose exec -ti node xray x25519",
+                    "shortIds": [
+                        "Generate shortIds",
+                        "for i in {1..4}; do openssl rand -hex 8; done | jq -R . | jq -s ."
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "VLESS TCP REALITY",
+            "listen": "/run/sockets/xray-vless-tcp.sock,0666",
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "raw",
+                "rawSettings": {
+                    "acceptProxyProtocol": true
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "target": "/run/sockets/nginx-main.sock",
+                    "xver": 2,
+                    "spiderX": "/",
+                    "serverNames": [
+                        "vlt.domain.tld"
+                    ],
+                    "privateKey": "docker compose exec -ti node xray x25519",
+                    "shortIds": [
+                        "Generate shortIds",
+                        "for i in {1..4}; do openssl rand -hex 8; done | jq -R . | jq -s ."
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "VLESS Websocket REALITY",
+            "listen": "/run/sockets/xray-vless-ws.sock,0666",
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                    "acceptProxyProtocol": false,
+                    "path": "/vlsws"
+                },
+                "security": "none"
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "VLESS GRPC REALITY",
+            "listen": "/run/sockets/xray-vless-grpc.sock,0666",
+            "protocol": "vless",
+            "settings": {
+                "clients": [],
+                "decryption": "none"
+            },
+            "streamSettings": {
+                "network": "grpc",
+                "grpcSettings": {
+                    "serviceName": "xyz"
+                },
+                "sockopt": {
+                    "acceptProxyProtocol": true
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "target": "/run/sockets/nginx-main.sock",
+                    "xver": 2,
+                    "spiderX": "/",
+                    "serverNames": [
+                        "vlg.domain.tld"
+                    ],
+                    "privateKey": "docker compose exec -ti node xray x25519",
+                    "shortIds": [
+                        "Generate shortIds",
+                        "for i in {1..4}; do openssl rand -hex 8; done | jq -R . | jq -s ."
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "TROJAN TCP REALITY",
+            "listen": "/run/sockets/xray-trojan-tcp.sock,0666",
+            "protocol": "trojan",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "tcp",
+                "tcpSettings": {
+                    "acceptProxyProtocol": true
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "target": "/run/sockets/nginx-main.sock",
+                    "xver": 2,
+                    "spiderX": "/",
+                    "serverNames": [
+                        "tt.domain.tld"
+                    ],
+                    "privateKey": "docker compose exec -ti node xray x25519",
+                    "shortIds": [
+                        "Generate shortIds",
+                        "for i in {1..4}; do openssl rand -hex 8; done | jq -R . | jq -s ."
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "TROJAN Websocket REALITY",
+            "listen": "/run/sockets/xray-trojan-ws.sock,0666",
+            "protocol": "trojan",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "ws",
+                "wsSettings": {
+                    "acceptProxyProtocol": false,
+                    "path": "/trws"
+                },
+                "security": "none"
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        },
+        {
+            "tag": "TROJAN GRPC REALITY",
+            "listen": "/run/sockets/xray-trojan-grpc.sock,0666",
+            "protocol": "trojan",
+            "settings": {
+                "clients": []
+            },
+            "streamSettings": {
+                "network": "grpc",
+                "grpcSettings": {
+                    "serviceName": "main"
+                },
+                "sockopt": {
+                    "acceptProxyProtocol": true
+                },
+                "security": "reality",
+                "realitySettings": {
+                    "show": false,
+                    "target": "/run/sockets/nginx-main.sock",
+                    "xver": 2,
+                    "spiderX": "/",
+                    "serverNames": [
+                        "tg.domain.tld"
+                    ],
+                    "privateKey": "docker compose exec -ti node xray x25519",
+                    "shortIds": [
+                        "Generate shortIds",
+                        "for i in {1..4}; do openssl rand -hex 8; done | jq -R . | jq -s ."
+                    ]
+                }
+            },
+            "sniffing": {
+                "enabled": true,
+                "destOverride": [
+                    "http",
+                    "tls",
+                    "quic"
+                ]
+            }
+        }
+    ],
+    "outbounds": [
+        {
+            "protocol": "freedom",
+            "tag": "DIRECT"
+        },
+        {
+            "protocol": "blackhole",
+            "tag": "BLOCK"
+        }
+    ],
+    "routing": {
+        "rules": [
+            {
+                "ip": [
+                    "geoip:private"
+                ],
+                "outboundTag": "BLOCK",
+                "type": "field"
+            },
+            {
+                "domain": [
+                    "geosite:private"
+                ],
+                "outboundTag": "BLOCK",
+                "type": "field"
+            },
+            {
+                "protocol": [
+                    "bittorrent"
+                ],
+                "outboundTag": "BLOCK",
+                "type": "field"
+            }
+        ]
+    }
+}
