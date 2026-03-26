@@ -6,5 +6,3 @@ skip-check:
 
 framework:
   - dockerfile
-
-quiet: true

@@ -1,0 +1,9 @@
+---
+services:
+  app:
+    image: nextcloud
+    volumes:
+      - nextcloud:/var/www/html
+
+volumes:
+  nextcloud:

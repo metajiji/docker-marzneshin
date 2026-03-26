@@ -2,3 +2,4 @@
 # https://github.com/hadolint/hadolint?tab=readme-ov-file#configure
 ignored:
   - DL3008  # Unwant pin versions in apt get install
+  - DL3018  # Unwant pin versions in apt get install

@@ -18,28 +18,179 @@ x-container: &container
 
 name: marzneshin
 services:
+  system:
+    <<: *container
+    build: containers/system
+    restart: "no"
+    user: root:root
+    privileged: true
+    entrypoint:
+      - sh
+      - -xe
+    command:
+      - /entrypoint.sh
+    volumes:
+      - type: bind
+        source: ./volumes/system/entrypoint.sh
+        target: /entrypoint.sh
+        read_only: true
+        bind:
+          create_host_path: false
+
+  # https://hub.docker.com/r/goacme/lego
+  # https://go-acme.github.io/lego/dns/yandexcloud/index.html
+  lego:
+    <<: *container
+    image: goacme/lego:v4
+    init: true
+    environment:
+      TZ: ${TZ:-UTC}
+      LEGO_PATH: /lego-data
+      LEGO_EMAIL: ${LEGO_EMAIL:?err}
+      HOST_COMPOSE_DIR: ${HOST_COMPOSE_DIR:?err}  # For hook script
+    env_file:
+      - server_names.env
+    deploy:
+      restart_policy:
+        condition: always
+        delay: 10s
+        window: 120s
+    user: root:root
+    cap_drop:
+      - ALL
+    cap_add:
+      - SETGID  # For cron
+      - SETUID  # For cron
+      - KILL  # For kill command
+      - NET_BIND_SERVICE  # For lego lister http port 80
+    security_opt:
+      - no-new-privileges=true
+    entrypoint:
+      - sh
+      - -xe
+    command:
+      - /lego-scripts/entrypoint.sh
+    healthcheck:
+      test:
+        - CMD
+        - /bin/sh
+        - -e
+        - /lego-scripts/healthcheck.sh
+      interval: 60s
+      timeout: 10s
+      retries: 3
+      start_period: 3m
+    tmpfs:
+      - /tmp
+      - /run
+      - /etc/crontabs
+    volumes:
+      - lego-data:/lego-data  # Should be equal LEGO_PATH
+      - tls:/tls
+      - type: bind
+        source: ./volumes/lego/lego-scripts
+        target: /lego-scripts
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: /var/run/docker.sock
+        target: /var/run/docker.sock
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HOST_DC_BIN_PATH:?err}
+        target: /usr/local/bin/docker-compose
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ${HOST_COMPOSE_DIR:?err}
+        target: ${HOST_COMPOSE_DIR:?err}
+        read_only: true
+        bind:
+          create_host_path: false
+
   node:
     <<: *container
     image: ghcr.io/metajiji/docker-marzneshin/node:latest
     user: nobody:nogroup
+    init: true
     env_file:
       - node.env
-    cap_add:
-      - NET_BIND_SERVICE
     ulimits:
       nofile:
         soft: 1048576
         hard: 1048576
     tmpfs:
       - /tmp
+      - /run
     volumes:
       - node_data:/app/data
+      - run-sockets:/run/sockets:rw
       - type: bind
         source: ./client.pem
         target: /app/data/client.pem
         read_only: true
         bind:
           create_host_path: false
+      - type: bind
+        source: ./volumes/hysteria/etc/hysteria
+        target: /etc/hysteria
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      system:
+        condition: service_completed_successfully
+      lego:
+        condition: service_healthy
+
+  nginx:
+    <<: *container
+    image: nginx:stable-alpine-slim
+    read_only: false  # Required for /docker-entrypoint.sh
+    cap_add:
+      - SETUID  # For switch from root to nginx user
+      - SETGID  # For switch from root to nginx group
+      - CHOWN  # For entrypoint script
+      - NET_BIND_SERVICE  # For listen on <1024 ports
+    ulimits:
+      nofile:
+        soft: 1048576
+        hard: 1048576
+    env_file:
+      - server_names.env
+    tmpfs:
+      - /etc/nginx/conf.d:size=8m
+      - /etc/nginx/stream-conf.d:size=8m
+    volumes:
+      - run-sockets:/run/sockets:rw
+      - tls:/etc/nginx/ssl
+      - type: bind
+        source: ./volumes/nginx/etc/nginx/templates
+        target: /etc/nginx/templates
+        read_only: true
+        bind:
+          create_host_path: false
+      - type: bind
+        source: ./volumes/nginx/nextcloud
+        target: /nextcloud
+        read_only: true
+        bind:
+          create_host_path: false
+    depends_on:
+      lego:
+        condition: service_healthy
 
 volumes:
   node_data:
+  tls:
+  lego-data:
+  run-sockets:
+    driver: local
+    driver_opts:
+      type: tmpfs
+      device: tmpfs
+      o: size=8m,noexec,nosuid,nodev,nr_inodes=500,mode=1777,noatime,nodiratime

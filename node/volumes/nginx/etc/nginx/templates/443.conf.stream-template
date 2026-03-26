@@ -1,0 +1,28 @@
+map $ssl_preread_server_name $backend_target {
+    $SERVER_NAME_HYSTERIA2 127.0.0.1:3443;
+    $SERVER_NAME_VMESS_GRPC unix:/run/sockets/xray-vmess-grpc.sock;
+    $SERVER_NAME_VLESS_XHTTP unix:/run/sockets/xray-vless-xhttp.sock;
+    $SERVER_NAME_VLESS_TCP unix:/run/sockets/xray-vless-tcp.sock;
+    $SERVER_NAME_VLESS_GRPC unix:/run/sockets/xray-vless-grpc.sock;
+    $SERVER_NAME_TROJAN_TCP unix:/run/sockets/xray-trojan-tcp.sock;
+    $SERVER_NAME_TROJAN_GRPC unix:/run/sockets/xray-trojan-grpc.sock;
+    default unix:/run/sockets/nginx-main.sock;
+}
+
+server {
+    listen 443;
+    proxy_pass $backend_target;
+    ssl_preread on;
+    proxy_protocol on;
+    proxy_timeout 1h;
+    proxy_connect_timeout 5s;
+    tcp_nodelay on;
+}
+
+server {  # Hysteria ACME workaround for proxy-protocol
+    listen 127.0.0.1:3443 proxy_protocol;
+    proxy_pass 127.0.0.1:2443;
+    proxy_timeout 1h;
+    proxy_connect_timeout 5s;
+    tcp_nodelay on;
+}
